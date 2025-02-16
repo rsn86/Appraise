@@ -659,9 +659,9 @@ class PairwiseAssessmentResult(BasePairwiseAssessmentResult):
                 s.append(','.join([str(a) for a in i]))
 
         from os.path import join
-        from Appraise.settings import BASE_DIR
+        from Appraise.settings import DATA_DIR
 
-        media_file_path = join(BASE_DIR, 'media', csv_file)
+        media_file_path = join(DATA_DIR, 'media', csv_file)
         with open(media_file_path, 'w') as outfile:
             for c in s:
                 outfile.write(c)
@@ -739,9 +739,9 @@ class PairwiseAssessmentResult(BasePairwiseAssessmentResult):
                 s.append(','.join([str(a) for a in e]))
 
         from os.path import join
-        from Appraise.settings import BASE_DIR
+        from Appraise.settings import DATA_DIR
 
-        media_file_path = join(BASE_DIR, 'media', csvFile)
+        media_file_path = join(DATA_DIR, 'media', csvFile)
         with open(media_file_path, 'w') as outfile:
             for c in s:
                 outfile.write(c)

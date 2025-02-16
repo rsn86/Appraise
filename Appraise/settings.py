@@ -16,8 +16,12 @@ from logging.handlers import RotatingFileHandler
 
 from django.core.exceptions import ImproperlyConfigured
 
+import ast
+from socket import gethostname, gethostbyname 
+
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA_DIR = os.environ.get('APPRAISE_DATA_DIR', BASE_DIR)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
@@ -35,7 +39,10 @@ if SECRET_KEY == _SECRET_KEY_DEFAULT:
         'Using the default SECRET_KEY value! Set and export APPRAISE_SECRET_KEY envvar instead'
     )
 
-ALLOWED_HOSTS = os.environ.get('APPRAISE_ALLOWED_HOSTS', '127.0.0.1').split(',')
+ALLOWED_HOSTS = [host.strip() for host in
+  os.environ.get('OCELOT_ALLOWED_HOSTS', '127.0.0.1').split(',')
+]
+ALLOWED_HOSTS.extend([gethostname(), gethostbyname(gethostname())]) 
 
 CSRF_TRUSTED_ORIGINS = os.environ.get('APPRAISE_CSRF_TRUSTED_ORIGINS', 'https://*.127.0.0.1').split(',')
 
@@ -50,6 +57,7 @@ DB_USER = os.environ.get('APPRAISE_DB_USER')
 DB_PASSWORD = os.environ.get('APPRAISE_DB_PASSWORD')
 DB_HOST = os.environ.get('APPRAISE_DB_HOST')
 DB_PORT = os.environ.get('APPRAISE_DB_PORT')
+DB_OPTIONS = ast.literal_eval(os.environ.get('APPRAISE_DB_OPTIONS', "{'sslmode': 'require'}"))
 
 if all((DB_ENGINE, DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT)):
     DATABASES = {
@@ -60,7 +68,7 @@ if all((DB_ENGINE, DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT)):
             'PASSWORD': DB_PASSWORD,
             'HOST': DB_HOST,
             'PORT': DB_PORT,
-            'OPTIONS': {'sslmode': 'require'},
+            'OPTIONS': DB_OPTIONS,
         }
     }
 
@@ -68,7 +76,7 @@ else:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+            'NAME': os.path.join(DATA_DIR, 'db.sqlite3'),
         }
     }
 
@@ -76,7 +84,7 @@ FILE_UPLOAD_PERMISSIONS = 0o644
 
 # Logging settings for this Django project.
 LOG_LEVEL = logging.DEBUG
-LOG_FILENAME = os.path.join(BASE_DIR, 'appraise.log')
+LOG_FILENAME = os.path.join(DATA_DIR, 'appraise.log')
 LOG_FORMAT = "[%(asctime)s] %(name)s::%(levelname)s %(message)s"
 LOG_DATE = "%m/%d/%Y @ %H:%M:%S"
 LOG_FORMATTER = logging.Formatter(LOG_FORMAT, LOG_DATE)
@@ -194,7 +202,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.environ.get('APPRAISE_STATIC_ROOT', os.path.join(BASE_DIR, 'static'))
+STATIC_ROOT = os.environ.get('APPRAISE_STATIC_ROOT', os.path.join(DATA_DIR, 'static'))
 
 # TODO: This is a temporary hack for running Appraise locally for regression
 # testing and development as WhiteNoise staticfiles app does not work.
