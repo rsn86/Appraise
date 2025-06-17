@@ -6,6 +6,9 @@ See LICENSE for usage details
 # pylint: disable=W0611
 from datetime import datetime
 from datetime import timedelta
+from datetime import timezone
+utc = timezone.utc
+
 from os import path
 
 from django.contrib.auth.models import User
@@ -15,7 +18,6 @@ from django.db.models import Count
 from django.db.models import Q
 from django.db.utils import OperationalError
 from django.db.utils import ProgrammingError
-from django.utils.timezone import utc
 
 from EvalData.models import DirectAssessmentResult
 from EvalData.models import DirectAssessmentTask
