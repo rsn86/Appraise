@@ -40,7 +40,7 @@ if SECRET_KEY == _SECRET_KEY_DEFAULT:
     )
 
 ALLOWED_HOSTS = [host.strip() for host in
-  os.environ.get('OCELOT_ALLOWED_HOSTS', '127.0.0.1').split(',')
+  os.environ.get('APPRAISE_ALLOWED_HOSTS', '127.0.0.1').split(',')
 ]
 ALLOWED_HOSTS.extend([gethostname(), gethostbyname(gethostname())]) 
 
