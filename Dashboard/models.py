@@ -229,15 +229,20 @@ LANGUAGE_CODES_AND_NAMES = {
 # All sign language codes
 SIGN_LANGUAGE_CODES = set([LANGUAGE_CODES_AND_NAMES['sgg']])
 
-# Ensure that all languages have a corresponding group.
-try:
-    for code in LANGUAGE_CODES_AND_NAMES:
-        if not Group.objects.filter(name=code).exists():
-            new_language_group = Group(name=code)
-            new_language_group.save()
+# Moved to a function that's executed only after Django's app initialization is complete
+# and database connections are ready, via the connection_ready signal.
+# This prevents RuntimeWarning: "Accessing the database during app initialization is discouraged."
+# Do not perform database schema alterations as doing so may cause the flush command to fail if it runs during the migrate command.
+def ensure_language_group_exists(sender, **kwargs):
+    # Ensure that all languages have a corresponding group.
+    try:
+        for code in LANGUAGE_CODES_AND_NAMES:
+            if not Group.objects.filter(name=code).exists():
+                new_language_group = Group(name=code)
+                new_language_group.save()
 
-except (OperationalError, ProgrammingError):
-    pass
+    except (OperationalError, ProgrammingError):
+        pass
 
 
 def validate_language_code(code_or_codes):
