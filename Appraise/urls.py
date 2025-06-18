@@ -56,7 +56,7 @@ urlpatterns = [
     re_path(
         r'^dashboard/sign-out/$',
         auth_views.LogoutView.as_view(
-            template_name='Dashboard/signout.html',  # TODO: this does not exist!
+            next_page='/',
             extra_context=BASE_CONTEXT,
         ),
         name='sign-out',
