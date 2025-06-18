@@ -1,0 +1,63 @@
+# Put sensitive information in a .env file and reference them here.
+
+services:
+  db:
+    image: postgres:14-alpine # Official PostgreSQL image. 'alpine' is lighter.
+    environment:
+      # Environment variables to configure PostgreSQL
+      POSTGRES_DB: ${APPRAISE_DB_NAME:-appraise} # Database name. Default: appraise
+      POSTGRES_USER: ${APPRAISE_DB_USER:-appraise} # Database user. Default: appraise
+      POSTGRES_PASSWORD: ${APPRAISE_DB_PASSWORD:-appraise} # Database password. Default: appraise
+    volumes:
+      # Persistent volume for PostgreSQL data. This ensures data is not lost on container restart.
+      - appraise_db_data:/var/lib/postgresql/data
+    ports:
+      # Optional: expose the PostgreSQL port to the host.
+      # Useful if you need to access the database directly from outside Docker.
+      - "5432:5432"
+    restart: unless-stopped # Ensures the DB container restarts automatically unless manually stopped.
+
+  web:
+    build: . # Builds the Docker image from the Dockerfile in the current directory.
+    # The command to be executed when the web container starts.
+    # 'sh -c' is used so that multiple instructions can be executed sequentially and environment variables can be expanded.
+    # 'python manage.py migrate' is crucial for applying database migrations before starting the application.
+    command: sh -c "python manage.py migrate && gunicorn --bind 0.0.0.0:8000 ${APPRAISE_WSGI_APPLICATION} ${GUNICORN_EXTRA_ARGS:-}"
+    volumes:
+      # Mounts the current host directory to /app in the container.
+      # This is useful for development, as local code changes reflect in the container without rebuilding the image.
+      # - .:/app
+      # Uncomment if you have a specific volume for campaigns
+      # - my_campaign:/campaigns
+      # Persistent volume for Appraise data directory, as per your specification.
+      - appraise_app_data:/data/appraise
+    ports:
+      # Maps container port 8000 to host port 8000.
+      - "8000:8000"
+    environment:
+      # Environment variables for Appraise's database connection.
+      APPRAISE_WSGI_APPLICATION: Appraise.wsgi:application # Defines which WSGI app Gunicorn should use
+      APPRAISE_DB_ENGINE: django.db.backends.postgresql_psycopg2
+      APPRAISE_DB_NAME: ${APPRAISE_DB_NAME:-appraise}
+      APPRAISE_DB_USER: ${APPRAISE_DB_USER:-appraise}
+      APPRAISE_DB_PASSWORD: ${APPRAISE_DB_PASSWORD:-appraise}
+      # APPRAISE_DB_HOST points to the PostgreSQL service name ('db') within the Docker Compose network.
+      APPRAISE_DB_HOST: db # Database service name in docker-compose.yml
+      APPRAISE_DB_PORT: 5432
+      APPRAISE_DB_OPTIONS: "{'sslmode': 'disable'}" # Passed as a JSON/Python string
+      # Other important environment variables for your Django application (replace with your actual values)
+      APPRAISE_SECRET_KEY: ${APPRAISE_SECRET_KEY:-your_very_secure_secret_key_here} # VERY IMPORTANT: Change to a strong, unique key in production!
+      APPRAISE_DEBUG: ${DEBUG:-True} # Set to "False" in production
+      # APPRAISE_ALLOWED_HOSTS: ".example.com, localhost, 127.0.0.1" # Define your allowed hosts in production
+      # Environment variables for Gunicorn configuration
+      GUNICORN_EXTRA_ARGS: "--access-logfile - --error-logfile -"
+    depends_on:
+      # Ensures the 'db' service is started before the 'web' service.
+      # For a more robust 'healthcheck', you would need to define a 'healthcheck' in the 'db' service.
+      - db
+    restart: unless-stopped # Ensures the web container restarts automatically.
+
+# Definition of named volumes
+volumes:
+  appraise_db_data: # Volume for persistent PostgreSQL data
+  appraise_app_data: # Volume for persistent Appraise data (e.g., media files, uploads)

@@ -27,3 +27,5 @@ Scripts/restart_all.sh
 static/**
 !Dashboard/static/Dashboard/css/link-button.css
 
+.env
+

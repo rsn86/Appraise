@@ -15,9 +15,9 @@ Annotation tasks currently supported in Appraise:
 
 ## Getting Started
 
-See [INSTALL.md](https://github.com/AppraiseDev/Appraise/blob/master/INSTALL.md)
-for a step-by-step instructions on how to install prerequisites and setup
-Appraise.
+See [INSTALL.md](https://github.com/AppraiseDev/Appraise/blob/master/INSTALL.md) for a step-by-step instructions on how to install prerequisites and setup Appraise.
+
+See [DOCKER.md](DOCKER.md) for instructions on running Appraise via Docker.
 
 ## Usage
 
