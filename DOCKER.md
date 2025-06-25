@@ -7,6 +7,7 @@ This README provides instructions on how to set up and run the Appraise applicat
 * [Usage](#usage)
 * [Starting a campaign](#starting-a-campaign)
 * [Environment Variables](#environment-variables)
+* [Pré-built image](#docker-hub-image)
 
 ## Prerequisites
 
@@ -27,7 +28,7 @@ Before you begin, ensure you have the following installed on your system:
     Make sure you have your `Dockerfile`, `compose-pgsql.yml`, and `compose-sqlite.yml` in the container directory of the project.
 
 3.  **Environment Variables (Optional but Recommended):**
-    For sensitive information and environment-specific settings (like `APPRAISE_SECRET_KEY`, `DEBUG`, and database credentials), create a `.env` file in the same directory as your Docker Compose files. Docker Compose will automatically load variables from this file.
+    For sensitive information or environment-specific settings (like `APPRAISE_SECRET_KEY`, `DEBUG`, and database credentials), create a `.env` file in the same directory as your Docker Compose files. Docker Compose will automatically load variables from this file.
 
     Example `.env` file:
     ```env
@@ -36,7 +37,7 @@ Before you begin, ensure you have the following installed on your system:
     APPRAISE_DB_USER=appraise_user
     APPRAISE_DB_PASSWORD=your_secure_db_password
     APPRAISE_SECRET_KEY=your_django_secret_key_here # IMPORTANT: Change this for production!
-    DEBUG=True # Set to False for production
+    DEBUG=True # Set to empty string "" for production
     ```
 
 ## Usage
@@ -66,7 +67,7 @@ docker-compose -f compose-sqlite.yml up -d --build --no-cache
 This command must be run after your services are up and running. Replace `<DB_ENGINE>` with `pgsql` or `sqlite` depending on your setup.
 
 ```bash
-docker-compose -f compose-<DBEngine>.yml run --rm web python3 manage.py createsuperuser
+docker-compose -f compose-<DBEngine>.yml exec web python3 manage.py createsuperuser
 ```
 
 ### 3. Collecting Static Files
@@ -74,7 +75,7 @@ docker-compose -f compose-<DBEngine>.yml run --rm web python3 manage.py createsu
 You should run it after your services are up and running.
 
 ```bash
-docker-compose -f compose-<DBEngine>.yml run --rm web python3 manage.py collectstatic --no-post-process
+docker-compose -f compose-<DBEngine>.yml exec web python3 manage.py collectstatic --no-post-process
 ```
 
 ### 4. Accessing the Application
@@ -108,16 +109,16 @@ docker-compose -f compose-<DBEngine>.yml down [--volumes]
 
 The [`Examples`](../Examples/) directory contains a few examples of existing annotation campaigns.
 
-You can execute then in the web container by just prefixing the command with: `docker-compose -f compose-<DBEngine>.yml run --rm web`
+You can execute then in the web container by just prefixing the command with: `docker-compose -f compose-<DBEngine>.yml exec web`
 
 ```bash
 # See Examples/MQM+ESA/README.md
 
 # Create the output directory in the persistent volume
-docker-compose -f compose-<DBEngine>.yml run --rm web mkdir -p /data/appraise/campaigns/MQM+ESA/
+docker-compose -f compose-<DBEngine>.yml exec web mkdir -p /data/appraise/campaigns/MQM+ESA/
 
 # Create the campaign
-docker-compose -f compose-<DBEngine>.yml run --rm web \
+docker-compose -f compose-<DBEngine>.yml exec web \
 python3 manage.py StartNewCampaign Examples/MQM+ESA/manifest_esa.json \
     --batches-json Examples/MQM+ESA/batches_esa.json \
     --csv-output /data/appraise/campaigns/MQM+ESA/output.csv

@@ -15,9 +15,9 @@ services:
       # Uncomment if you have a specific volume for campaigns
       # - my_campaign:/campaigns
       # Persistent volume for Appraise data directory, as per your specification.
-      - appraise_app_data:/data/appraise/data
-      - appraise_app_media:/data/appraise/media
-      - appraise_app_static:/data/appraise/static
+      - appraise_app_data:/data/appraise/data:rw,z
+      - appraise_app_media:/data/appraise/media:rw,z
+      - appraise_app_static:/data/appraise/static:rw,z
     ports:
       # Maps container port 8000 to host port 8000.
       - "8000:8000"
