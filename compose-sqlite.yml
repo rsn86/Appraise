@@ -33,7 +33,7 @@ services:
       # VERY IMPORTANT: Change to a strong, unique key in production!
       # APPRAISE_SECRET_KEY
       # Token for health checks, this is optional and can be used to secure health check endpoints.
-      # echo "APPRAISE_HEALTH_CHECK_TOKEN: $(python -c 'import secrets; print(secrets.token_urlsafe())')" >> .env
+      # echo "APPRAISE_HEALTH_CHECK_TOKEN=$(python -c 'import secrets; print(secrets.token_urlsafe())')" >> .env
       # APPRAISE_HEALTH_CHECK_TOKEN
       # Set to empty string "" in production
       APPRAISE_DEBUG: ${DEBUG:-true}
