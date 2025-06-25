@@ -136,6 +136,7 @@ The Appraise application utilizes the following environment variables for config
 * `APPRAISE_TEMPLATE_DEBUG`
 * `APPRAISE_ADMINS`
 * `APPRAISE_SECRET_KEY`
+* `APPRAISE_HEALTH_CHECK_TOKEN`
 * `APPRAISE_DB_ENGINE`
 * `APPRAISE_DB_NAME`
 * `APPRAISE_DB_USER`
@@ -143,6 +144,7 @@ The Appraise application utilizes the following environment variables for config
 * `APPRAISE_DB_HOST`
 * `APPRAISE_DB_PORT`
 * `APPRAISE_DB_OPTIONS`
+* `APPRAISE_DB_EXTRA_SETTINGS`
 * `APPRAISE_ALLOWED_HOSTS`
 * `APPRAISE_CSRF_TRUSTED_ORIGINS`
 * `APPRAISE_STATIC_ROOT`

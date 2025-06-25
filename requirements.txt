@@ -2,7 +2,8 @@ beautifulsoup4
 django>=5
 django-stubs
 lxml
-psycopg2-binary
+psycopg[binary,pool]
 tablib
 scipy
 whitenoise[brotli]
+django-health-check

@@ -19,6 +19,8 @@ from django.core.exceptions import ImproperlyConfigured
 import ast
 from socket import gethostname, gethostbyname 
 
+from typing import Dict, Any
+
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.environ.get('APPRAISE_DATA_DIR', BASE_DIR)
@@ -26,7 +28,7 @@ DATA_DIR = os.environ.get('APPRAISE_DATA_DIR', BASE_DIR)
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
 
-DEBUG = os.environ.get('APPRAISE_DEBUG', True)
+DEBUG = os.environ.get('APPRAISE_DEBUG', False)
 TEMPLATE_DEBUG = os.environ.get('APPRAISE_TEMPLATE_DEBUG', DEBUG)
 
 ADMINS = os.environ.get('APPRAISE_ADMINS', ())
@@ -37,6 +39,16 @@ SECRET_KEY = os.environ.get('APPRAISE_SECRET_KEY', _SECRET_KEY_DEFAULT)
 if SECRET_KEY == _SECRET_KEY_DEFAULT:
     warnings.warn(
         'Using the default SECRET_KEY value! Set and export APPRAISE_SECRET_KEY envvar instead'
+    )
+
+HEALTH_CHECK_TOKEN = os.environ.get('APPRAISE_HEALTH_CHECK_TOKEN', '')
+if not HEALTH_CHECK_TOKEN:
+    warnings.warn(
+        'No APPRAISE_HEALTH_CHECK_TOKEN set, health check will not be protected by token!'
+    )
+if HEALTH_CHECK_TOKEN == SECRET_KEY:
+    warnings.warn(
+        "Do NOT use Django's SECRET_KEY setting as the HEALTH_CHECK_TOKEN! This should never be exposed."
     )
 
 ALLOWED_HOSTS = [host.strip() for host in
@@ -57,7 +69,10 @@ DB_USER = os.environ.get('APPRAISE_DB_USER')
 DB_PASSWORD = os.environ.get('APPRAISE_DB_PASSWORD')
 DB_HOST = os.environ.get('APPRAISE_DB_HOST')
 DB_PORT = os.environ.get('APPRAISE_DB_PORT')
-DB_OPTIONS = ast.literal_eval(os.environ.get('APPRAISE_DB_OPTIONS', "{'sslmode': 'require'}"))
+DB_OPTIONS: Dict[str, Any] = ast.literal_eval(os.environ.get('APPRAISE_DB_OPTIONS', '{}'))
+DB_EXTRA_SETTINGS: Dict[str, Any] = ast.literal_eval(os.environ.get('APPRAISE_DB_EXTRA_SETTINGS', '{}'))
+
+assert 'OPTIONS' not in DB_EXTRA_SETTINGS, "APPRAISE_DB_EXTRA_SETTINGS should not contain 'OPTIONS' key, use APPRAISE_DB_OPTIONS instead."
 
 if all((DB_ENGINE, DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT)):
     DATABASES = {
@@ -69,6 +84,7 @@ if all((DB_ENGINE, DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT)):
             'HOST': DB_HOST,
             'PORT': DB_PORT,
             'OPTIONS': DB_OPTIONS,
+            **DB_EXTRA_SETTINGS,
         }
     }
 
@@ -77,6 +93,8 @@ else:
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': os.path.join(DATA_DIR, 'db.sqlite3'),
+            'OPTIONS': DB_OPTIONS,
+            **DB_EXTRA_SETTINGS,
         }
     }
 
@@ -117,7 +135,17 @@ INSTALLED_APPS = [
     'EvalView',
     'EvalData',
     'Campaign',
+    'health_check',                     # required
+    'health_check.db',                  # stock Django health checkers
+    'health_check.contrib.migrations',  # migrations health check
 ]
+
+HEALTH_CHECK = {
+    "SUBSETS": {
+        "startup-probe": ["MigrationsHealthCheck", "DatabaseBackend[default]"],
+        "liveness-probe": ["DatabaseBackend[default]"],
+    },
+}
 
 if DEBUG:
     try:

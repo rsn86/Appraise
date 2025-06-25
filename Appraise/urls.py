@@ -13,6 +13,7 @@ from django.urls import re_path
 
 from Appraise.settings import BASE_CONTEXT
 from Appraise.settings import DEBUG
+from Appraise.settings import HEALTH_CHECK_TOKEN
 from Campaign import views as campaign_views
 from Dashboard import views as dashboard_views
 from EvalData import views as evaldata_views
@@ -191,6 +192,10 @@ urlpatterns = [
         r'(?P<sort_key>[0123456])?/?$',
         campaign_views.campaign_status,
         name='campaign_status',
+    ),
+    re_path(
+        rf"^ht/{HEALTH_CHECK_TOKEN + '/' if HEALTH_CHECK_TOKEN else ''}",
+        include('health_check.urls'),
     ),
 ]
 

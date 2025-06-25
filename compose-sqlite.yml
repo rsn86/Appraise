@@ -2,11 +2,12 @@
 
 services:
   web:
+    # image: rsn86/appraise:latest # Uncomment this line if you want to use a pre-built image from Docker Hub.
     build: . # Builds the Docker image from the Dockerfile in the current directory.
     # The command to be executed when the web container starts.
     # 'sh -c' is used so that multiple instructions can be executed sequentially and environment variables can be expanded.
     # 'python manage.py migrate' is crucial for applying database migrations before starting the application.
-    command: sh -c "python manage.py migrate && gunicorn --bind 0.0.0.0:8000 ${APPRAISE_WSGI_APPLICATION} ${GUNICORN_EXTRA_ARGS:-}"
+    command: sh -c "python manage.py migrate && gunicorn --bind 0.0.0.0:8000 ${APPRAISE_WSGI_APPLICATION:-Appraise.wsgi:application} ${GUNICORN_EXTRA_ARGS:-}"
     volumes:
       # Mounts the current host directory to /app in the container.
       # This is useful for development, as local code changes reflect in the container without rebuilding the image.
@@ -14,22 +15,39 @@ services:
       # Uncomment if you have a specific volume for campaigns
       # - my_campaign:/campaigns
       # Persistent volume for Appraise data directory, as per your specification.
-      - appraise_app_data:/data/appraise
+      - appraise_app_data:/data/appraise/data
+      - appraise_app_media:/data/appraise/media
+      - appraise_app_static:/data/appraise/static
     ports:
       # Maps container port 8000 to host port 8000.
       - "8000:8000"
+    env_file:
+      # Load environment variables from a .env file in the current directory.
+      # Ensure this file exists and contains the necessary environment variables.
+      - .env
     environment:
-      # Environment variables for Appraise's database connection.
-      APPRAISE_WSGI_APPLICATION: "Appraise.wsgi:application" # Defines which WSGI app Gunicorn should use
       # For using SQLite as the database, don't set the APPRAISE_DB_* variables
+      # Defines which WSGI app Gunicorn should use
+      APPRAISE_WSGI_APPLICATION: "${APPRAISE_WSGI_APPLICATION:-Appraise.wsgi:application}"
       # Other important environment variables for your Django application (replace with your actual values)
-      APPRAISE_SECRET_KEY: ${APPRAISE_SECRET_KEY:-your_very_secure_secret_key_here} # VERY IMPORTANT: Change to a strong, unique key in production!
-      APPRAISE_DEBUG: ${DEBUG:-True} # Set to "False" in production
-      # APPRAISE_ALLOWED_HOSTS: ".example.com, localhost, 127.0.0.1" # Define your allowed hosts in production
+      # VERY IMPORTANT: Change to a strong, unique key in production!
+      # APPRAISE_SECRET_KEY
+      # Token for health checks, this is optional and can be used to secure health check endpoints.
+      # echo "APPRAISE_HEALTH_CHECK_TOKEN: $(python -c 'import secrets; print(secrets.token_urlsafe())')" >> .env
+      # APPRAISE_HEALTH_CHECK_TOKEN
+      # Set to empty string "" in production
+      APPRAISE_DEBUG: ${DEBUG:-true}
+      # Define your allowed hosts
+      APPRAISE_ALLOWED_HOSTS: ${APPRAISE_ALLOWED_HOSTS:-localhost, 127.0.0.1}
+      APPRAISE_DATA_DIR: /data/appraise/data
+      APPRAISE_MEDIA_ROOT: /data/appraise/media/ # must end with a slash
+      APPRAISE_STATIC_ROOT: /data/appraise/static
       # Environment variables for Gunicorn configuration
       GUNICORN_EXTRA_ARGS: "--access-logfile - --error-logfile -"
     restart: unless-stopped # Ensures the web container restarts automatically.
 
 # Definition of named volumes
 volumes:
-  appraise_app_data: # Volume for persistent Appraise data (e.g., media files, uploads)
+  appraise_app_data: # Volume for persistent Appraise data
+  appraise_app_media: # Volume for Appraise media files
+  appraise_app_static: # Volume for Appraise static files
