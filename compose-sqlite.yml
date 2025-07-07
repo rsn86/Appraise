@@ -7,11 +7,11 @@ services:
     # The command to be executed when the web container starts.
     # 'sh -c' is used so that multiple instructions can be executed sequentially and environment variables can be expanded.
     # 'python manage.py migrate' is crucial for applying database migrations before starting the application.
-    command: sh -c "python manage.py migrate && gunicorn --bind 0.0.0.0:8000 ${APPRAISE_WSGI_APPLICATION:-Appraise.wsgi:application} ${GUNICORN_EXTRA_ARGS:-}"
+    command: sh -c "python3 manage.py collectstatic --no-post-process --noinput && python manage.py migrate && gunicorn --bind 0.0.0.0:8000 ${APPRAISE_WSGI_APPLICATION:-Appraise.wsgi:application} ${GUNICORN_EXTRA_ARGS:-}"
     volumes:
       # Mounts the current host directory to /app in the container.
       # This is useful for development, as local code changes reflect in the container without rebuilding the image.
-      # - .:/app
+      # - .:/home/appuser/app
       # Uncomment if you have a specific volume for campaigns
       # - my_campaign:/campaigns
       # Persistent volume for Appraise data directory, as per your specification.
