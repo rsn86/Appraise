@@ -1,46 +1,47 @@
 ARG PYTHON_VERSION=3.12
-FROM python:${PYTHON_VERSION}-alpine AS base
 
-# Prevents Python from writing pyc files.
-ENV PYTHONDONTWRITEBYTECODE=1
-
-# Keeps Python from buffering stdout and stderr to avoid situations where
-# the application crashes without emitting any logs due to buffering.
-ENV PYTHONUNBUFFERED=1
+# Stage 1: Builder -Installs deps on a python venv
+FROM python:${PYTHON_VERSION}-alpine AS builder
 
 # Create app directory
 WORKDIR /app
+
+# Add build deps
+RUN apk add --no-cache --virtual .build-deps gcc musl-dev postgresql-dev
+
+# Creates the python virtual environment and installs app required packages
+COPY ./requirements.txt .
+RUN python -m venv /opt/venv \
+ && /opt/venv/bin/pip install -r requirements.txt --no-cache-dir \
+ && /opt/venv/bin/pip install gunicorn --no-cache-dir
+
+# Stage 2: Final - Creates the production App image
+FROM python:${PYTHON_VERSION}-alpine AS base
+
+# Install SO runtime deps
+RUN apk add --no-cache postgresql-libs
 
 # Create a non-privileged user that the app will run under.
 ARG UID=10001
 ARG APPRAISE_BASE_PATH=/data/appraise
 ARG APPRAISE_DATA_PATH="${APPRAISE_BASE_PATH}"/data/
 ARG APPRAISE_MEDIA_PATH="${APPRAISE_BASE_PATH}"/media/
-RUN adduser \
-    --disabled-password \
-    --gecos "" \
-    --home "/nonexistent" \
-    --shell "/sbin/nologin" \
-    --no-create-home \
-    --uid "${UID}" \
-    appuser && \
- mkdir -p "${APPRAISE_DATA_PATH}" && \
- mkdir -p "${APPRAISE_MEDIA_PATH}" && \
- chown -R appuser: "${APPRAISE_BASE_PATH}"
+RUN addgroup -S -g "${UID}" appgroup \
+ && adduser -S -G appgroup -h /home/appuser -u "${UID}" appuser \
+ && mkdir -p /home/appuser/app \
+ && chown -R appuser: /home/appuser/app \
+ && mkdir -p "${APPRAISE_DATA_PATH}" \
+ && mkdir -p "${APPRAISE_MEDIA_PATH}" \
+ && chown -R appuser: "${APPRAISE_BASE_PATH}"
 
-# Install app dependencies + gunicorn
-COPY ../Appraise/requirements.txt .
+# Copy the python virtual environment from the builder
+COPY --chown=appuser:appgroup --from=builder /opt/venv /opt/venv
 
-RUN \
- apk add --no-cache postgresql-libs && \
- apk add --no-cache --virtual .build-deps gcc musl-dev postgresql-dev && \
- python3 -m pip install -r requirements.txt --no-cache-dir && \
- python3 -m pip install gunicorn --no-cache-dir && \
- apk --purge del .build-deps
+# Sets the workdir to the app directory
+WORKDIR /home/appuser/app
 
 # Copy the source code into the container.
-COPY ../Appraise /app
-RUN chown -R appuser: /app
+COPY --chown=appuser:appgroup . .
 
 # Switch to the non-privileged user to run the application.
 USER appuser
@@ -59,18 +60,20 @@ USER appuser
 # ENV APPRAISE_DB_HOST=
 # ENV APPRAISE_DB_PORT=
 # ENV APPRAISE_DB_OPTIONS="{'sslmode': 'require'}"
-ENV APPRAISE_ALLOWED_HOSTS='127.0.0.1'
 # ENV APPRAISE_CSRF_TRUSTED_ORIGINS='https://*.127.0.0.1'
 # ENV APPRAISE_STATIC_ROOT='/data/appraise/data/static'
-ENV APPRAISE_MEDIA_ROOT="${APPRAISE_MEDIA_PATH}"
-ENV APPRAISE_DATA_DIR="${APPRAISE_DATA_PATH}"
-ENV APPRAISE_WSGI_APPLICATION=Appraise.wsgi:application
-ENV GUNICORN_EXTRA_ARGS="--access-logfile - --error-logfile -"
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH="/opt/venv/bin:$PATH" \
+    APPRAISE_ALLOWED_HOSTS='127.0.0.1' \
+    APPRAISE_MEDIA_ROOT="${APPRAISE_MEDIA_PATH}" \
+    APPRAISE_DATA_DIR="${APPRAISE_DATA_PATH}" \
+    APPRAISE_WSGI_APPLICATION=Appraise.wsgi:application \
+    GUNICORN_EXTRA_ARGS="--access-logfile - --error-logfile -"
 
 # Expose the base path for Appraise data (/data/appraise).
 VOLUME "${APPRAISE_BASE_PATH}"
 
 EXPOSE 8000
-
-# Use gunicorn to serve the application.
 CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:8000 ${APPRAISE_WSGI_APPLICATION} ${GUNICORN_EXTRA_ARGS}"]
