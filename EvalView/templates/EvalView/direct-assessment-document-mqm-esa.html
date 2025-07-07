@@ -7,6 +7,10 @@
 <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.13.2/themes/smoothness/jquery-ui.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/js-cookie/2.2.1/js.cookie.min.js"></script>
 <script src="{% static 'EvalView/js/direct-assessment-document-mqm-esa.js' %}"></script>
+{% if static_context %}
+<script src="{% static 'EvalView/js/static-context.js' %}"></script>
+<link rel="stylesheet" href="{% static 'EvalView/css/static-context.css' %}">
+{% endif %}
 
 {% endblock %}
 
@@ -56,6 +60,33 @@
 </div>
 
 {% for item,scores in items %}
+
+{% if static_context %}
+{% if forloop.counter == 1 or item.isCompleteDocument %}
+{% if item.sourceContextLeft or item.targetContextLeft %}
+<div class="context-box item-odd item-static-content pseudoquotelike">
+        <div class="source-box">
+            <div class="row">
+                <div class="col-sm-12">
+                    <span title="Static context">                    
+                        <div id="context-{{ forloop.counter }}" class="context-content">
+                            {% if item.targetContextLeft %}
+                            {{ item.targetContextLeft|safe }}
+                            {% endif %}
+                            {% if item.sourceContextLeft %}
+                            {{ item.sourceContextLeft|safe }}
+                            {% endif %}
+                        </div>
+                        <small class="segment-label">Additional context</small>
+                        <a href="#" class="toggle-context" data-target="context-{{ forloop.counter }}">(show)</a>
+                    </span>
+                </div>
+            </div>
+        </div>
+</div>
+{% endif %}
+{% endif %}
+{% endif %}
 
 <div id="item-{{ item.itemID }}" class="item-box quotelike active" data-item-id="{{ item.itemID }}"
     data-item-completed="{{ scores.completed }}" data-item-score="{{ scores.score }}">

@@ -1213,6 +1213,7 @@ def direct_assessment_document_mqmesa(campaign, current_task, request):
         'ui_lang': "enu",
         'mqm_type': 'ESA' if 'esa' in campaign_opts else "MQM",
         'guidelines': guidelines,
+        'static_context': 'staticcontext' in campaign_opts,
     }
 
     if ajax:
